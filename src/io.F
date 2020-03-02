@@ -545,7 +545,7 @@ SUBROUTINE READ_INPUT
 
 
 ! vegetation
-! vegetation， sediment eco-morpho parts need reading protection
+! vegetation,sediment eco-morpho parts need reading protection
 ! --------------------------------------------------------------
 # if defined(VEGETATION)
       CALL GET_STRING_VAL(VEG_TYPE,FILE_NAME,'VEG_TYPE',line,ierr)
@@ -1118,8 +1118,17 @@ SUBROUTINE STATIONS
 
 #if defined (SUBSURFACE)
           iunit_subsurface=200+i
-          write (iunit_subsurface,'(20E16.5)') time,  eta_ground(ista(i),jsta(i)),&
-                          P_ground(ista(i),jsta(i)),Q_ground(ista(i),jsta(i))
+          IF(.NOT.SATURATION .AND. VEGEROOT_CLAMPED)THEN
+           write (iunit_subsurface,'(20E16.5)') time,  eta_ground(ista(i),jsta(i)), &
+                         P_ground(ista(i),jsta(i)),Q_ground(ista(i),jsta(i)), &
+                         Bio1(ista(i),jsta(i)),avgEr1(ista(i),jsta(i)), &
+                         Coeff_uptake1(ista(i),jsta(i)),Coeff_capct1(ista(i),jsta(i)),&
+                         Bio2(ista(i),jsta(i)),avgEr2(ista(i),jsta(i)), &
+                         Coeff_uptake2(ista(i),jsta(i)),Coeff_capct2(ista(i),jsta(i))
+       ELSE
+           write (iunit_subsurface,'(20E16.5)') time,  eta_ground(ista(i),jsta(i)),&
+                         P_ground(ista(i),jsta(i)),Q_ground(ista(i),jsta(i))
+      ENDIF
 # endif 
 
        endif
@@ -1327,6 +1336,14 @@ SUBROUTINE PREVIEW
         TMP_NAME = TRIM(FDIR)//'qgrn_'//TRIM(FILE_NAME)
         call PutFile(TMP_NAME,Q_ground,Mloc,Nloc1)
      ENDIF
+   IF(.NOT.SATURATION)THEN
+     IF(OUT_Omega)THEN
+       TMP_NAME = TRIM(FDIR)//'omega_'//TRIM(FILE_NAME)
+       call PutFile(TMP_NAME,omega,Mloc,Nloc)
+
+       TMP_NAME = TRIM(FDIR)//'tmpmos_'//TRIM(FILE_NAME)
+       call PutFile(TMP_NAME,tmp_mos,Mloc,Nloc)
+     ENDIF
 
 !     IF(OUT_MASK_GROUND)THEN
 !        TMP_NAME = TRIM(FDIR)//'maskgro_'//TRIM(FILE_NAME)
@@ -1347,6 +1364,53 @@ SUBROUTINE PREVIEW
 !     ENDIF
 
 
+       IF(VEGEROOT_CLAMPED)THEN
+            IF(OUT_Biomass)THEN
+              TMP_NAME = TRIM(FDIR)//'Bio1_'//TRIM(FILE_NAME)
+              call PutFile(TMP_NAME,Bio1,Mloc,Nloc)
+
+               IF(num_species == 2)THEN
+                 TMP_NAME = TRIM(FDIR)//'Bio2_'//TRIM(FILE_NAME)
+                 call PutFile(TMP_NAME,Bio2,Mloc,Nloc)
+               ENDIF
+            ENDIF
+
+            IF(OUT_Coefficient)THEN
+              TMP_NAME = TRIM(FDIR)//'Coef_uptake1_'//TRIM(FILE_NAME)
+              call PutFile(TMP_NAME,Coeff_uptake1,Mloc,Nloc)
+              TMP_NAME = TRIM(FDIR)//'Coef_capct1_'//TRIM(FILE_NAME)
+              call PutFile(TMP_NAME,Coeff_capct1,Mloc,Nloc)
+
+               IF(num_species == 2)THEN
+                 TMP_NAME = TRIM(FDIR)//'Coef_uptake2_'//TRIM(FILE_NAME)
+                 call PutFile(TMP_NAME,Coeff_uptake2,Mloc,Nloc)
+                 TMP_NAME = TRIM(FDIR)//'Coef_capct2_'//TRIM(FILE_NAME)
+                 call PutFile(TMP_NAME,Coeff_capct2,Mloc,Nloc)
+               ENDIF
+            ENDIF
+
+              IF(OUT_avgEroot)THEN
+                TMP_NAME = TRIM(FDIR)//'avgEr1_'//TRIM(FILE_NAME)
+                call PutFile(TMP_NAME,avgEr1,Mloc,Nloc)
+
+                 IF(num_species == 2)THEN
+                   TMP_NAME = TRIM(FDIR)//'avgEr2_'//TRIM(FILE_NAME)
+                   call PutFile(TMP_NAME,avgEr2,Mloc,Nloc)
+                 ENDIF
+              ENDIF
+
+              IF(OUT_Transpiration)THEN
+                TMP_NAME = TRIM(FDIR)//'Transpiration1_'//TRIM(FILE_NAME)
+                call PutFile(TMP_NAME,ET_t1,Mloc,Nloc)
+
+                 IF(num_species == 2)THEN
+                   TMP_NAME = TRIM(FDIR)//'Transpiration2_'//TRIM(FILE_NAME)
+                   call PutFile(TMP_NAME,ET_t2,Mloc,Nloc)
+                 ENDIF
+              ENDIF
+         ENDIF
+  ENDIF
+
 # endif
 ! end subsurface
 
@@ -1356,7 +1420,6 @@ SUBROUTINE PREVIEW
         TMP_NAME = TRIM(FDIR)//'tmp_'//TRIM(FILE_NAME)
         call PutFile(TMP_NAME,tmp4preview,Mloc,Nloc)
      ENDIF
-
 
 END SUBROUTINE PREVIEW
 

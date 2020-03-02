@@ -12,7 +12,7 @@
              FLAG_2 = -DPARALLEL
 #            FLAG_3 = -DDEBUG
             FLAG_4 = -DSUBGRID
-#            FLAG_5 = -DCOUPLING
+            FLAG_5 = -DCOUPLING
 #            FLAG_6 = -DCOUPLING_NO_UV
 #            FLAG_7 = -DPOLY_FRICTION
 #            FLAG_8 = -DPOLY_POROSITY
@@ -67,9 +67,9 @@
 #  SUBGRID Source Code.
 #--------------------------------------------------------------------------
 
-MODS  = mod_param.F mod_global.F mod_util.F mod_subsurface.F\
+MODS  = mod_param.F mod_global.F mod_util.F mod_subsurface.F \
 
-MAIN  = kernel.F init.F io.F subgrid.F bc_exchange.F coupling.F polyfit.F sed.F sed_bc.F biomass.F river.F tide.F\
+MAIN  = kernel.F init.F io.F subgrid.F bc_exchange.F coupling.F polyfit.F sed.F sed_bc.F biomass.F river.F tide.F \
 
 SRCS = $(MODS)  $(MAIN)
 

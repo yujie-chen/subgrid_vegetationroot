@@ -250,7 +250,7 @@ SUBROUTINE SETUP_INITIAL_ETA_SUBGRID
      REAL(SP) :: tmpv1,tmpv2,depmax,hwater,avgeta
      INTEGER :: pcount
 
-! get depth in coarse grid, depth_x and depth_y
+!!!! get depth in coarse grid, depth_x and depth_y
 
      DO J=1,Nloc
      DO I=1,Mloc
