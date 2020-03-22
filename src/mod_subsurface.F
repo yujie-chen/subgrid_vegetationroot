@@ -48,7 +48,10 @@ MODULE SUBSURFACE_MODULE
     REAL(SP) :: Gamma, Parameter_n
     REAL(SP),DIMENSION(:,:),ALLOCATABLE:: Omega, Omega0,Depth,tmp_mos
     REAL(SP) :: gamma_rcp,tmp_coeff
-
+    CHARACTER(LEN=80):: MODEL_TYPE
+# if defined (MULITRELATIONSHIP)
+    REAL(SP) :: LEN
+# endif
     LOGICAL :: OUT_Omega = .FALSE.
 
 !-------------FOR VEGEROOT--------------------------------------
@@ -61,6 +64,9 @@ MODULE SUBSURFACE_MODULE
                ET_t_max1,ET_t_max2,ET_e, &
                growth1,growth2,Tidal_min,  &
                Bio_init1, Bio_init2, &
+# if defined (MULITRELATIONSHIP)
+               E_dot, &
+# endif
                Beta1, Beta2, Beta12
    REAL(SP),DIMENSION(:,:),ALLOCATABLE::avgEr1,avgEr2,ET_t1,ET_t2,&
                                    Bio1, Bio2, Bio10, Bio20,&
@@ -547,6 +553,21 @@ SUBROUTINE UNSATURATION_INITIAL
 
      CALL GET_LOGICAL_VAL(OUT_Omega,FILE_NAME,'MeanOmega',line,ierr)
 
+     CALL GET_STRING_VAL(MODEL_TYPE,FILE_NAME,'MODEL_TYPE',line,ierr)
+!    MODEL_TYPE: DARCY/B-C/vGen
+           IF(ierr==1)THEN
+             MODEL_TYPE = 'Brooks-Corey'
+# if defined (PARALLEL)
+           if (myid.eq.0) THEN
+              WRITE(*,'(A40,A40)')'MODEL_TYPE: Use default,', 'B-C'
+              WRITE(3,'(A40,A40)')'MODEL_TYPE: Use default,', 'B-C'
+           endif
+# else
+              WRITE(*,'(A40,A40)')'MODEL_TYPE: Use default,', 'B-C'
+              WRITE(3,'(A40,A40)')'MODEL_TYPE: Use default,', 'B-C'
+# endif
+           ENDIF
+
      ALLOCATE(Omega(Mloc,Nloc),Omega0(Mloc,Nloc),Depth(Mloc,Nloc),tmp_mos(I,J))
 
       CALL GET_Float_VAL(Gamma,FILE_NAME,'Gamma',line,ierr)
@@ -596,6 +617,10 @@ SUBROUTINE UNSATURATION_INITIAL
      Gamma_rcp = 1 / Gamma
      tmp_coeff = Gamma_rcp/(1-Parameter_n)
 
+# if defined (MULITRELATIONSHIP)
+     LEN = 0.0002
+# endif
+
 
 ! get depth in coarse grid
      
@@ -613,6 +638,31 @@ SUBROUTINE UNSATURATION_INITIAL
 END SUBROUTINE UNSATURATION_INITIAL
 
 
+# if defined (MULITRELATIONSHIP)
+
+SUBROUTINE CALCULATE_MOISTURE
+     REAL(SP)::SUM
+     Omega0=Omega
+     DO J=1,Nloc
+     DO I=1,Mloc
+      IF (MASK(I,J)==0)THEN
+         IF(MODEL_TYPE=='B-C')THEN
+             IF((-DEPTH(I,J)).GE.(ETA_GROUND(I,J)+Gamma_rcp))THEN
+                 CALL INTEGRATION(ETA_GROUND(I,J),ETA_GROUND(I,J)+Gamma_rcp,(-DEPTH(I,J)),LEN,SUM)
+                 Omega(I,J)=(SUM+Gamma_rcp)*POR_constant
+             ELSE
+                 Omega(I,J)=(-DEPTH(I,J)-ETA_GROUND(I,J))*POR_constant
+             ENDIF
+         ENDIF
+      ELSE
+         Omega(I,J)=ZERO
+      ENDIF
+    ENDDO
+    ENDDO
+END SUBROUTINE CALCULATE_MOISTURE
+
+# else
+
 SUBROUTINE CALCULATE_MOISTURE
      Omega0=Omega
      DO J=1,Nloc
@@ -626,6 +676,8 @@ SUBROUTINE CALCULATE_MOISTURE
     ENDDO
     ENDDO
 END SUBROUTINE CALCULATE_MOISTURE
+
+# endif
 
 SUBROUTINE VEGEROOT_INITIAL
                     
@@ -1060,6 +1112,31 @@ SUBROUTINE VEGEROOT_INITIAL
 
 END SUBROUTINE VEGEROOT_INITIAL
 
+# if defined (MULITRELATIONSHIP)
+
+SUBROUTINE CALCULATE_avgEr(MRD,avgEr,ETA_GROUND,DEPTH)
+! Calculate the mean soil saturation over the mean root depth
+     IMPLICIT NONE
+     REAL(SP),INTENT(IN)::MRD,ETA_GROUND,DEPTH
+     REAL(SP),INTENT(OUT)::avgEr
+     REAL(SP):: tmp_r, tmp_mos2, SUM
+
+      IF(-DEPTH-MRD .GE. ETA_GROUND+gamma_rcp)THEN
+          CALL INTEGRATION(ETA_GROUND,-DEPTH-MRD,-DEPTH,LEN,SUM)
+          avgEr=SUM/MRD
+      ELSEIF(-DEPTH .GT. ETA_GROUND+gamma_rcp) THEN
+          CALL INTEGRATION(ETA_GROUND,-DEPTH-MRD,ETA_GROUND+gamma_rcp,LEN,SUM)
+          avgEr=(SUM-DEPTH-ETA_GROUND-gamma_rcp)/MRD
+      ELSE
+          avgEr=1.0
+      ENDIF
+          avgEr= min(1.0, avgEr)
+          avgEr= max(ZERO, avgEr)
+        
+END SUBROUTINE CALCULATE_avgEr
+
+# else
+
 SUBROUTINE CALCULATE_avgEr(MRD,avgEr,ETA_GROUND,DEPTH)
 ! Calculate the mean soil saturation over the mean root depth
      IMPLICIT NONE
@@ -1080,6 +1157,8 @@ SUBROUTINE CALCULATE_avgEr(MRD,avgEr,ETA_GROUND,DEPTH)
                 avgEr= max(ZERO, avgEr)
         
 END SUBROUTINE CALCULATE_avgEr
+
+# endif
 
 SUBROUTINE GET_ROOTUPTAKE_COEFF(e1,e2,e3,e4,avgEr,coeff_uptake)
       USE GLOBAL, ONLY : Mloc,Nloc
@@ -1153,6 +1232,40 @@ SUBROUTINE UPDATE_BIOMASS
    ENDDO
    ENDDO
 END SUBROUTINE UPDATE_BIOMASS
+
+# if defined (MULITRELATIONSHIP)
+SUBROUTINE Model_Func(Z,ETA_GROUND,E_dot)
+ REAL,INTENT(IN):: Z,ETA_GROUND
+ REAL(SP),INTENT(OUT):: E_dot
+! For B-C Model
+ IF(MODEL_TYPE == 'B-C')THEN
+   E_dot = (Gamma*(Z-ETA_GROUND))**(-parameter_n)
+ ENDIF
+END SUBROUTINE
+
+SUBROUTINE INTEGRATION(ETA_GROUND,LOWBOUND,UPBOUND,LEN,SUM)
+ IMPLICIT NONE
+ REAL(SP),INTENT(IN):: ETA_GROUND,LOWBOUND,UPBOUND,LEN
+ REAL(SP),INTENT(OUT):: SUM
+ REAL(SP):: Z
+ INTEGER :: num,i
+    IF(LOWBOUND .LT. UPBOUND)THEN
+       SUM = ZERO
+       Z = LOWBOUND
+       DO WHILE(Z .ge. LOWBOUND .and. Z .le. UPBOUND )
+          CALL Model_Func(Z,ETA_GROUND,E_dot)
+          SUM = SUM + E_dot*LEN
+          Z = Z + LEN
+       ENDDO
+       SUM = max(SUM,ZERO)
+    ELSE
+       WRITE(*,'(A80)')'UPBOUND should be bigger than LOWBOUND'
+       STOP
+    ENDIF
+
+END SUBROUTINE INTEGRATION
+
+# endif
 
 END MODULE SUBSURFACE_MODULE
 
