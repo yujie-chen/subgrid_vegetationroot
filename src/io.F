@@ -1119,7 +1119,7 @@ SUBROUTINE STATIONS
 #if defined (SUBSURFACE)
           iunit_subsurface=200+i
           IF(.NOT.SATURATION .AND. VEGEROOT_CLAMPED)THEN
-           write (iunit_subsurface,'(20E16.5)') time,  eta_ground(ista(i),jsta(i)), &
+           write (iunit_subsurface,'(20E20.10)') time,  eta_ground(ista(i),jsta(i)), &
                          P_ground(ista(i),jsta(i)),Q_ground(ista(i),jsta(i)), &
                          Bio1(ista(i),jsta(i)),avgEr1(ista(i),jsta(i)), &
                          Coeff_uptake1(ista(i),jsta(i)),Coeff_capct1(ista(i),jsta(i)),&
@@ -1756,7 +1756,7 @@ SUBROUTINE PutFile (FILE,PHI,M,N)
 ! format length
         write(FORMAT_LEN(1:1),'(A1)') '('
         write(FORMAT_LEN(2:8),'(I7)') Mglob
-        write(FORMAT_LEN(9:13),'(A5)') 'E16.6'
+        write(FORMAT_LEN(9:13),'(A6)') 'E20.10'
         write(FORMAT_LEN(14:14),'(A1)') ')'
      ENDIF
 
@@ -1807,7 +1807,7 @@ SUBROUTINE PutFile(FILE,PHI,M,N)
 ! format length
         write(FORMAT_LEN(1:1),'(A1)') '('
         write(FORMAT_LEN(2:8),'(I7)') Mloc1
-        write(FORMAT_LEN(9:13),'(A5)') 'E16.6'
+        write(FORMAT_LEN(9:13),'(A5)') 'E16.10'
         write(FORMAT_LEN(14:14),'(A1)') ')'
      ENDIF
 

@@ -22,7 +22,7 @@
 #            FLAG_12 = -DECO_MORPHOLOGY
 #            FLAG_13 = -DFREESLIP_BC
              FLAG_15 = -DSUBSURFACE
-#            FLAG_16 = -DMULITRELATIONSHIP
+#            FLAG_16 = -DMULTIRELATIONSHIP
 #--------------------------------------------------------------------------
 #  mpi defs 
 #--------------------------------------------------------------------------
