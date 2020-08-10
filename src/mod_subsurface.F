@@ -1220,8 +1220,6 @@ END SUBROUTINE GET_CARRYCAPACITY_COEFF
 
 SUBROUTINE UPDATE_BIOMASS
 
-     REAL(SP):: tmp_B1,tmp_B2
-
       Bio10=Bio1
       Bio20=Bio2
 
@@ -1229,53 +1227,17 @@ SUBROUTINE UPDATE_BIOMASS
    DO I = 1, Mloc
         IF(DEPTH(I,J).le.Tidal_min)THEN
               IF(num_species==1)THEN
-                tmp_B1=DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio10(I,J))
-
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'tmp_B1:', tmp_B1
-                ENDIF
-
-                Bio1(I,J)=Bio10(I,J)+tmp_B1
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'Bio1:', Bio1(I,J)
-                ENDIF
-
+                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio10(I,J))
                 Bio1(I,J)=max(Bio1(I,J),ZERO)
-
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'Bio1:', Bio1(I,J)
-                ENDIF
               ELSEIF(num_species==2)THEN
-                tmp_B1=DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)  &
-                -Beta1*Bio10(I,J)-Beta12*Bio20(I,J))
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'tmp_B1:', tmp_B1
-                ENDIF
-                Bio1(I,J)=Bio10(I,J)+tmp_B1
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'Bio1:', Bio1(I,J)
-                ENDIF
+                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)  &
+                           -Beta1*Bio10(I,J)-Beta12*Bio20(I,J))
                 Bio1(I,J)=max(Bio1(I,J),ZERO)
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'Bio1:', Bio1(I,J)
-                ENDIF
-                tmp_B2=DT*Bio20(I,J)*growth2*(Coeff_capct2(I,J)  &
-                -Beta2*Bio20(I,J)-Beta12*Bio10(I,J))
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'tmp_B2:', tmp_B2
-                ENDIF
-                Bio2(I,J)=Bio20(I,J)+tmp_B2
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'Bio2:', Bio2(I,J)
-                ENDIF
+                Bio2(I,J)=Bio20(I,J)+DT*Bio20(I,J)*growth2*(Coeff_capct2(I,J)  &
+                           -Beta2*Bio20(I,J)-Beta12*Bio10(I,J))
                 Bio2(I,J)=max(Bio2(I,J),ZERO)
-                IF(J==40 .AND. I==40)THEN
-                      WRITE(*,'(A13,F15.12)')'Bio2:', Bio2(I,J)
-                ENDIF
               ENDIF
         ENDIF
-
-
    ENDDO
    ENDDO
 END SUBROUTINE UPDATE_BIOMASS
