@@ -1191,6 +1191,11 @@ SUBROUTINE PREVIEW
 
     IF(icount==1)THEN
       ! do nothing right now
+    IF(OUT_DEPTH)THEN
+        TMP_NAME = TRIM(FDIR)//'EtaScreen'
+        call PutFile(TMP_NAME,EtaScreen,Mloc,Nloc)
+    ENDIF
+
     ENDIF
 
     IF(OUT_ETA)THEN
@@ -1369,9 +1374,15 @@ SUBROUTINE PREVIEW
               TMP_NAME = TRIM(FDIR)//'Bio1_'//TRIM(FILE_NAME)
               call PutFile(TMP_NAME,Bio1,Mloc,Nloc)
 
+             TMP_NAME = TRIM(FDIR)//'DeltaBio1_'//TRIM(FILE_NAME)
+             call PutFile(TMP_NAME,DeltaBio1,Mloc,Nloc)
+
                IF(num_species == 2)THEN
                  TMP_NAME = TRIM(FDIR)//'Bio2_'//TRIM(FILE_NAME)
                  call PutFile(TMP_NAME,Bio2,Mloc,Nloc)
+
+                TMP_NAME = TRIM(FDIR)//'DeltaBio2_'//TRIM(FILE_NAME)
+                call PutFile(TMP_NAME,DeltaBio2,Mloc,Nloc)
                ENDIF
             ENDIF
 
@@ -1756,8 +1767,8 @@ SUBROUTINE PutFile (FILE,PHI,M,N)
 ! format length
         write(FORMAT_LEN(1:1),'(A1)') '('
         write(FORMAT_LEN(2:8),'(I7)') Mglob
-        write(FORMAT_LEN(9:13),'(A6)') 'E20.10'
-        write(FORMAT_LEN(14:14),'(A1)') ')'
+        write(FORMAT_LEN(9:14),'(A6)') 'E20.10'
+        write(FORMAT_LEN(15:15),'(A1)') ')'
      ENDIF
 
      call MPI_Gather(npx,1,MPI_INTEGER,npxs,1,MPI_INTEGER,&
@@ -1807,8 +1818,8 @@ SUBROUTINE PutFile(FILE,PHI,M,N)
 ! format length
         write(FORMAT_LEN(1:1),'(A1)') '('
         write(FORMAT_LEN(2:8),'(I7)') Mloc1
-        write(FORMAT_LEN(9:13),'(A5)') 'E16.10'
-        write(FORMAT_LEN(14:14),'(A1)') ')'
+        write(FORMAT_LEN(9:14),'(A5)') 'E20.10'
+        write(FORMAT_LEN(15:15),'(A1)') ')'
      ENDIF
 
         OPEN(1,FILE=TRIM(FILE))
