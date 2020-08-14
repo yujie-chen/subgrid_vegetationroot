@@ -69,7 +69,7 @@ MODULE SUBSURFACE_MODULE
 # endif
                Beta1, Beta2, Beta12
    REAL(SP),DIMENSION(:,:),ALLOCATABLE::avgEr1,avgEr2,ET_t1,ET_t2,&
-                                   Bio1, Bio2, Bio10, Bio20,&
+                                   Bio1, Bio2, DeltaBio1, DeltaBio2,&
                                    Coeff_uptake1, Coeff_capct1,&
                                    Coeff_uptake2, Coeff_capct2
 
@@ -1085,7 +1085,7 @@ SUBROUTINE VEGEROOT_INITIAL
 
 ! ALLOCATION
 
-        ALLOCATE(Bio1(Mloc,Nloc),Bio2(Mloc,Nloc),Bio10(Mloc,Nloc),Bio20(Mloc,Nloc),&
+        ALLOCATE(Bio1(Mloc,Nloc),Bio2(Mloc,Nloc),DeltaBio1(Mloc,Nloc),DeltaBio2(Mloc,Nloc),&
             avgEr1(Mloc,Nloc),avgEr2(Mloc,Nloc),ET_t1(Mloc,Nloc),ET_t2(Mloc,Nloc), &
             Coeff_uptake1(Mloc,Nloc),Coeff_uptake2(Mloc,Nloc), &
             Coeff_capct1(Mloc,Nloc),Coeff_capct2(Mloc,Nloc))
@@ -1113,7 +1113,8 @@ SUBROUTINE VEGEROOT_INITIAL
         Coeff_uptake2 = ZERO
         Coeff_capct2 = ZERO
 
-
+        DeltaBio1 = ZERO
+        DeltaBio2 = ZERO
 
 END SUBROUTINE VEGEROOT_INITIAL
 
@@ -1220,21 +1221,53 @@ END SUBROUTINE GET_CARRYCAPACITY_COEFF
 
 SUBROUTINE UPDATE_BIOMASS
 
-      Bio10=Bio1
-      Bio20=Bio2
+  !    REAL(SP),DIMENSION(:,:),ALLOCATABLE::tmpBio1,tmpBio2
+      REAL(SP):: tmp1, tmp2
+ !     ALLOCATE(tmpBio1(Mloc,Nloc),tmpBio2(Mloc,Nloc))
+
+
+ !     tmpBio1=DeltaBio1
+ !     tmpBio2=DeltaBio2
 
    DO J = 1, Nloc
    DO I = 1, Mloc
         IF(DEPTH(I,J).le.Tidal_min)THEN
               IF(num_species==1)THEN
-                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio10(I,J))
+                 
+                 tmp1=DT*Bio1(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio1(I,J))
+                 DeltaBio1(I,J)=DeltaBio1(I,J)+tmp1
+                 Bio1(I,J)=Bio_init1+DeltaBio1(I,J)
+                
+!                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio10(I,J))
                 Bio1(I,J)=max(Bio1(I,J),ZERO)
+
               ELSEIF(num_species==2)THEN
-                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)  &
-                           -Beta1*Bio10(I,J)-Beta12*Bio20(I,J))
+
+                 tmp1=DT*Bio1(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio1(I,J)-Beta12*Bio2(I,J))
+                 DeltaBio1(I,J)=DeltaBio1(I,J)+tmp1
+
+                 tmp2=DT*Bio2(I,J)*growth2*(Coeff_capct2(I,J)-Beta2*Bio2(I,J)-Beta12*Bio1(I,J))
+                 DeltaBio2(I,J)=DeltaBio2(I,J)+tmp2
+                 
+                 Bio1(I,J)=Bio_init1+DeltaBio1(I,J)
+                 Bio2(I,J)=Bio_init2+DeltaBio2(I,J)
+
+ !                IF (I==40 .AND. J==40 .AND. Coeff_capct1(I,J) .GT. 0.0) THEN
+ !                     WRITE(*,*) 'Coeff_capct1 = ', Coeff_capct1(I,J)
+ !                     WRITE(*,'(A15,F20.18)') 'tmp1   = ', tmp1
+ !                     WRITE(*,'(A15,F20.18)') 'DeltaBio1   = ', DeltaBio1(I,J)
+ !                     WRITE(*,'(A15,F20.18)') 'Bio1   = ', Bio1(I,J)
+ !                ENDIF
+
+
+!                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)  &
+!                           -Beta1*Bio10(I,J)-Beta12*Bio20(I,J))
+                
+!               Bio2(I,J)=Bio20(I,J)+DT*Bio20(I,J)*growth2*(Coeff_capct2(I,J)  &
+!                           -Beta2*Bio20(I,J)-Beta12*Bio10(I,J))
+
+
                 Bio1(I,J)=max(Bio1(I,J),ZERO)
-                Bio2(I,J)=Bio20(I,J)+DT*Bio20(I,J)*growth2*(Coeff_capct2(I,J)  &
-                           -Beta2*Bio20(I,J)-Beta12*Bio10(I,J))
                 Bio2(I,J)=max(Bio2(I,J),ZERO)
               ENDIF
         ENDIF
