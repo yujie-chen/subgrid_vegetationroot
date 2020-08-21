@@ -56,6 +56,8 @@ MODULE SUBSURFACE_MODULE
 
 !-------------FOR VEGEROOT--------------------------------------
     LOGICAL :: VEGEROOT_CLAMPED =.FALSE.
+    LOGICAL :: HOT_IntialBIOMASS = .FALSE.
+    CHARACTER(LEN=80):: IntialBIO1_FILE,IntialBIO2_FILE
 
     INTEGER :: num_species
 
@@ -71,6 +73,7 @@ MODULE SUBSURFACE_MODULE
                Beta1, Beta2, Beta12
    REAL(SP),DIMENSION(:,:),ALLOCATABLE::avgEr1,avgEr2,ET_t1,ET_t2,&
                                    Bio1, Bio2, DeltaBio1, DeltaBio2,&
+                                   Bio10, Bio20,&
                                    Coeff_uptake1, Coeff_capct1,&
                                    Coeff_uptake2, Coeff_capct2
 
@@ -700,15 +703,15 @@ SUBROUTINE VEGEROOT_INITIAL
       CALL GET_INTEGER_VAL(num_species,FILE_NAME,'num_species',line,ierr)
 
       IF(ierr==1)THEN
-        num_species = 2
+        num_species = 1
 # if defined (PARALLEL)
       if (myid.eq.0) THEN
-         WRITE(*,'(A80)')'No num_species defined, USE defalt: 2'
-         WRITE(3,'(A80)')'No num_species defined, USE defalt: 2'
+         WRITE(*,'(A80)')'No num_species defined, USE defalt: 1'
+         WRITE(3,'(A80)')'No num_species defined, USE defalt: 1'
       endif
 # else
-         WRITE(*,'(A80)')'No num_species defined, USE defalt: 2'
-         WRITE(3,'(A80)')'No num_species defined, USE defalt: 2'
+         WRITE(*,'(A80)')'No num_species defined, USE defalt: 1'
+         WRITE(3,'(A80)')'No num_species defined, USE defalt: 1'
 # endif
        ENDIF
 
@@ -775,6 +778,8 @@ SUBROUTINE VEGEROOT_INITIAL
 # endif
       ENDIF
 
+      IF(.NOT.HOT_IntialBIOMASS)THEN
+
       CALL GET_Float_VAL(Bio_init1,FILE_NAME,'Initial_Biomass1',line,ierr)
       IF(ierr==1)THEN
           Bio_init1 = 0.2
@@ -788,6 +793,12 @@ SUBROUTINE VEGEROOT_INITIAL
          WRITE(3,'(A80)')'Initial_Biomass1: Use default,', '0.2'
 # endif
       ENDIF
+
+      ELSE
+
+      CALL GET_STRING_VAL(IntialBIO1_FILE,FILE_NAME,'IntialBIO1_FILE',line,ierr)
+
+     ENDIF
 
       CALL GET_Float_VAL(E14,FILE_NAME,'Anaerobiosis_point1',line,ierr)
       IF(ierr==1)THEN
@@ -941,6 +952,8 @@ SUBROUTINE VEGEROOT_INITIAL
 # endif
       ENDIF
 
+      IF(.NOT.HOT_IntialBIOMASS)THEN
+
       CALL GET_Float_VAL(Bio_init2,FILE_NAME,'Initial_Biomass2',line,ierr)
       IF(ierr==1)THEN
           Bio_init2 = 0.2
@@ -954,6 +967,13 @@ SUBROUTINE VEGEROOT_INITIAL
          WRITE(3,'(A80)')'Initial_Biomass2: Use default,', '0.2'
 # endif
       ENDIF
+
+      ELSE
+   
+         CALL GET_STRING_VAL(IntialBIO1_FILE,FILE_NAME,'IntialBIO1_FILE',line,ierr)
+
+      ENDIF
+      
 
       CALL GET_Float_VAL(E24,FILE_NAME,'Anaerobiosis_point2',line,ierr)
       IF(ierr==1)THEN
@@ -1103,35 +1123,61 @@ SUBROUTINE VEGEROOT_INITIAL
 ! ALLOCATION
 
         ALLOCATE(Bio1(Mloc,Nloc),Bio2(Mloc,Nloc),DeltaBio1(Mloc,Nloc),DeltaBio2(Mloc,Nloc),&
+                 Bio10(Mloc,Nloc),Bio20(Mloc,Nloc),&
             avgEr1(Mloc,Nloc),avgEr2(Mloc,Nloc),ET_t1(Mloc,Nloc),ET_t2(Mloc,Nloc), &
             Coeff_uptake1(Mloc,Nloc),Coeff_uptake2(Mloc,Nloc), &
             Coeff_capct1(Mloc,Nloc),Coeff_capct2(Mloc,Nloc))
 
 
 ! assign variables
+
+       IF(.NOT.HOT_IntialBIOMASS)THEN
         DO J = 1, Nloc
         DO I = 1, Mloc
             IF(DEPTH(I,J).le.Tidal_min)THEN
-                Bio1(I,J) = Bio_init1
-                Bio2(I,J) = Bio_init2
+                Bio10(I,J) = Bio_init1
             ELSE
-                Bio1(I,J) = ZERO
-                Bio2(I,J) = ZERO
+                Bio10(I,J) = ZERO
            ENDIF
         ENDDO
         ENDDO
 
+       ELSE
+         CALL GetFile(IntialBIO1_FILE,Bio10)
+       ENDIF
+
+
         avgEr1 = ZERO
-        avgEr2 = ZERO
         ET_t1 = ZERO
-        ET_t2 = ZERO
         Coeff_uptake1 = ZERO
         Coeff_capct1 = ZERO
+        DeltaBio1 = ZERO
+
+        IF(num_species==2)THEN
+
+           IF(.NOT.HOT_IntialBIOMASS)THEN
+            DO J = 1, Nloc
+            DO I = 1, Mloc
+                IF(DEPTH(I,J).le.Tidal_min)THEN
+                    Bio20(I,J) = Bio_init2
+                ELSE
+                    Bio20(I,J) = ZERO
+               ENDIF
+            ENDDO
+            ENDDO
+
+           ELSE
+             CALL GetFile(IntialBIO2_FILE,Bio20)
+           ENDIF
+            
+        avgEr2 = ZERO
+        ET_t2 = ZERO
         Coeff_uptake2 = ZERO
         Coeff_capct2 = ZERO
-
-        DeltaBio1 = ZERO
         DeltaBio2 = ZERO
+ 
+         ENDIF
+
 
 END SUBROUTINE VEGEROOT_INITIAL
 
@@ -1253,7 +1299,7 @@ SUBROUTINE UPDATE_BIOMASS
                  
                  tmp1=DT*Bio1(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio1(I,J))
                  DeltaBio1(I,J)=DeltaBio1(I,J)+tmp1*n_vege
-                 Bio1(I,J)=Bio_init1+DeltaBio1(I,J)
+                 Bio1(I,J)=Bio10(I,J)+DeltaBio1(I,J)
                 
 !                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio10(I,J))
                 Bio1(I,J)=max(Bio1(I,J),ZERO)
@@ -1266,23 +1312,8 @@ SUBROUTINE UPDATE_BIOMASS
                  tmp2=DT*Bio2(I,J)*growth2*(Coeff_capct2(I,J)-Beta2*Bio2(I,J)-Beta12*Bio1(I,J))
                  DeltaBio2(I,J)=DeltaBio2(I,J)+tmp2*n_vege
                  
-                 Bio1(I,J)=Bio_init1+DeltaBio1(I,J)
-                 Bio2(I,J)=Bio_init2+DeltaBio2(I,J)
-
- !                IF (I==40 .AND. J==40 .AND. Coeff_capct1(I,J) .GT. 0.0) THEN
- !                     WRITE(*,*) 'Coeff_capct1 = ', Coeff_capct1(I,J)
- !                     WRITE(*,'(A15,F20.18)') 'tmp1   = ', tmp1
- !                     WRITE(*,'(A15,F20.18)') 'DeltaBio1   = ', DeltaBio1(I,J)
- !                     WRITE(*,'(A15,F20.18)') 'Bio1   = ', Bio1(I,J)
- !                ENDIF
-
-
-!                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)  &
-!                           -Beta1*Bio10(I,J)-Beta12*Bio20(I,J))
-                
-!               Bio2(I,J)=Bio20(I,J)+DT*Bio20(I,J)*growth2*(Coeff_capct2(I,J)  &
-!                           -Beta2*Bio20(I,J)-Beta12*Bio10(I,J))
-
+                 Bio1(I,J)=Bio10(I,J)+DeltaBio1(I,J)
+                 Bio2(I,J)=Bio20(I,J)+DeltaBio2(I,J)
 
                 Bio1(I,J)=max(Bio1(I,J),ZERO)
                 Bio2(I,J)=max(Bio2(I,J),ZERO)
