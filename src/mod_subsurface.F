@@ -67,6 +67,7 @@ MODULE SUBSURFACE_MODULE
 # if defined (MULTIRELATIONSHIP)
                E_dot, &
 # endif
+               n_vege, &
                Beta1, Beta2, Beta12
    REAL(SP),DIMENSION(:,:),ALLOCATABLE::avgEr1,avgEr2,ET_t1,ET_t2,&
                                    Bio1, Bio2, DeltaBio1, DeltaBio2,&
@@ -711,6 +712,20 @@ SUBROUTINE VEGEROOT_INITIAL
 # endif
        ENDIF
 
+       CALL GET_Float_VAL(n_vege,FILE_NAME,'VegeDynamics_factor',line,ierr)
+
+             IF(ierr==1)THEN
+              n_vege = 1.0
+# if defined (PARALLEL)
+             if (myid.eq.0) THEN
+                WRITE(*,'(A80)')'No VegeDynamics_factor defined, USE defalt: 1.0'
+                WRITE(3,'(A80)')'No VegeDynamics_factor defined, USE defalt: 1.0'
+             endif
+# else
+                WRITE(*,'(A80)')'No VegeDynamics_factor defined, USE defalt: 1.0'
+                WRITE(3,'(A80)')'No VegeDynamics_factor defined, USE defalt: 1.0'
+# endif
+              ENDIF
       CALL GET_LOGICAL_VAL(OUT_Biomass,FILE_NAME,'Biomass',line,ierr)
       CALL GET_LOGICAL_VAL(OUT_avgERoot,FILE_NAME,'AvgEroot',line,ierr)
       CALL GET_LOGICAL_VAL(OUT_Coefficient,FILE_NAME,'Coefficient',line,ierr)
@@ -881,6 +896,7 @@ SUBROUTINE VEGEROOT_INITIAL
 !write in LOG.txt
 # if defined (PARALLEL)
        if(myid.eq.0) WRITE(3,'(A50)') '-----for VEGEROOT ----------'
+       if(myid.eq.0) WRITE(3,'(A22,F10.2)') 'VegeDynamics_factor =', n_vege
        if(myid.eq.0) WRITE(3,'(A19,F15.10)') 'Evaporation =', ET_e
        if(myid.eq.0) WRITE(3,'(A19,F12.2)') 'Tidal_min =', Tidal_min
        if(myid.eq.0) WRITE(3,'(A50)') '! For species 1 '
@@ -895,6 +911,7 @@ SUBROUTINE VEGEROOT_INITIAL
        if(myid.eq.0) WRITE(3,'(A19,F12.10)') 'Intrisic_growth =', growth1
 # else
        WRITE(3,'(A50)') '-----for VEGEROOT ----------'
+       WRITE(3,'(A22,F10.2)') 'VegeDynamics_factor =', n_vege
        WRITE(3,'(A19,F15.10)') 'Evaporation =', ET_e
        WRITE(3,'(A19,F12.2)') 'Tidal_min =', Tidal_min
        WRITE(3,'(A50)') '! For species 1 '
@@ -1235,7 +1252,7 @@ SUBROUTINE UPDATE_BIOMASS
               IF(num_species==1)THEN
                  
                  tmp1=DT*Bio1(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio1(I,J))
-                 DeltaBio1(I,J)=DeltaBio1(I,J)+tmp1
+                 DeltaBio1(I,J)=DeltaBio1(I,J)+tmp1*n_vege
                  Bio1(I,J)=Bio_init1+DeltaBio1(I,J)
                 
 !                Bio1(I,J)=Bio10(I,J)+DT*Bio10(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio10(I,J))
@@ -1244,10 +1261,10 @@ SUBROUTINE UPDATE_BIOMASS
               ELSEIF(num_species==2)THEN
 
                  tmp1=DT*Bio1(I,J)*growth1*(Coeff_capct1(I,J)-Beta1*Bio1(I,J)-Beta12*Bio2(I,J))
-                 DeltaBio1(I,J)=DeltaBio1(I,J)+tmp1
+                 DeltaBio1(I,J)=DeltaBio1(I,J)+tmp1*n_vege
 
                  tmp2=DT*Bio2(I,J)*growth2*(Coeff_capct2(I,J)-Beta2*Bio2(I,J)-Beta12*Bio1(I,J))
-                 DeltaBio2(I,J)=DeltaBio2(I,J)+tmp2
+                 DeltaBio2(I,J)=DeltaBio2(I,J)+tmp2*n_vege
                  
                  Bio1(I,J)=Bio_init1+DeltaBio1(I,J)
                  Bio2(I,J)=Bio_init2+DeltaBio2(I,J)
