@@ -57,7 +57,9 @@ MODULE SUBSURFACE_MODULE
 !-------------FOR VEGEROOT--------------------------------------
     LOGICAL :: VEGEROOT_CLAMPED =.FALSE.
     LOGICAL :: HOT_IntialBIOMASS = .FALSE.
-    CHARACTER(LEN=80):: IntialBIO1_FILE,IntialBIO2_FILE
+    CHARACTER(LEN=80):: IntialBIO1_FILE,IntialBIO2_FILE,&
+                        Eta0_FILE
+                        
 
     INTEGER :: num_species
 
@@ -729,6 +731,8 @@ SUBROUTINE VEGEROOT_INITIAL
                 WRITE(3,'(A80)')'No VegeDynamics_factor defined, USE defalt: 1.0'
 # endif
               ENDIF
+
+      CALL GET_LOGICAL_VAL(HOT_IntialBIOMASS,FILE_NAME,'HOT_IntialBIOMASS',line,ierr)
       CALL GET_LOGICAL_VAL(OUT_Biomass,FILE_NAME,'Biomass',line,ierr)
       CALL GET_LOGICAL_VAL(OUT_avgERoot,FILE_NAME,'AvgEroot',line,ierr)
       CALL GET_LOGICAL_VAL(OUT_Coefficient,FILE_NAME,'Coefficient',line,ierr)
@@ -797,6 +801,8 @@ SUBROUTINE VEGEROOT_INITIAL
       ELSE
 
       CALL GET_STRING_VAL(IntialBIO1_FILE,FILE_NAME,'IntialBIO1_FILE',line,ierr)
+
+      CALL GET_STRING_VAL(Eta0_FILE,FILE_NAME,'Eta0_FILE',line,ierr)
 
      ENDIF
 
@@ -970,7 +976,7 @@ SUBROUTINE VEGEROOT_INITIAL
 
       ELSE
    
-         CALL GET_STRING_VAL(IntialBIO1_FILE,FILE_NAME,'IntialBIO1_FILE',line,ierr)
+         CALL GET_STRING_VAL(IntialBIO2_FILE,FILE_NAME,'IntialBIO2_FILE',line,ierr)
 
       ENDIF
       
@@ -1144,6 +1150,7 @@ SUBROUTINE VEGEROOT_INITIAL
 
        ELSE
          CALL GetFile(IntialBIO1_FILE,Bio10)
+         CALL GetFile(ETA0_FILE,ETA_ground)
        ENDIF
 
 

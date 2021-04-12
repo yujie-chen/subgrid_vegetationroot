@@ -488,7 +488,8 @@ SUBROUTINE UPDATE_MASKS
  if ( n_west .eq. MPI_PROC_NULL.and.n_east .ne. MPI_PROC_NULL ) then
   DO J=1,Nloc
   DO I=Ibeg+1,Mloc1
-   IF(H_u(I,J)>MinDepth)THEN
+  ! IF(H_u(I,J)>MinDepth)THEN
+   IF(H_u(I,J)>ZERO)THEN
     MASKu(I,J)=1
    ELSE
     MASKu(I,J)=0
@@ -498,7 +499,8 @@ SUBROUTINE UPDATE_MASKS
  else if ( n_west .eq. MPI_PROC_NULL.and.n_east .eq. MPI_PROC_NULL ) then
   DO J=1,Nloc
   DO I=Ibeg+1,Iend1-1
-   IF(H_u(I,J)>MinDepth)THEN
+!   IF(H_u(I,J)>MinDepth)THEN
+   IF(H_u(I,J)>ZERO)THEN
     MASKu(I,J)=1
    ELSE
     MASKu(I,J)=0
@@ -508,7 +510,8 @@ SUBROUTINE UPDATE_MASKS
  else if ( n_west .ne. MPI_PROC_NULL.and.n_east .eq. MPI_PROC_NULL ) then
   DO J=1,Nloc
   DO I=1,Iend1-1
-   IF(H_u(I,J)>MinDepth)THEN
+ !  IF(H_u(I,J)>MinDepth)THEN
+   IF(H_u(I,J)>ZERO)THEN
     MASKu(I,J)=1
    ELSE
     MASKu(I,J)=0
@@ -519,7 +522,8 @@ SUBROUTINE UPDATE_MASKS
   else
   DO J=1,Nloc
   DO I=1,Mloc1
-   IF(H_u(I,J)>MinDepth)THEN
+!   IF(H_u(I,J)>MinDepth)THEN
+   IF(H_u(I,J)>ZERO)THEN
     MASKu(I,J)=1
    ELSE
     MASKu(I,J)=0
@@ -533,7 +537,8 @@ SUBROUTINE UPDATE_MASKS
   if ( n_suth .eq. MPI_PROC_NULL.and.n_nrth .ne. MPI_PROC_NULL ) then
   DO J=Jbeg+1,Nloc1
   DO I=1,Mloc
-   IF(H_v(I,J)>MinDepth)THEN
+!   IF(H_v(I,J)>MinDepth)THEN
+   IF(H_v(I,J)>ZERO)THEN
     MASKv(I,J)=1
    ELSE
     MASKv(I,J)=0
@@ -545,7 +550,8 @@ SUBROUTINE UPDATE_MASKS
 
   DO J=Jbeg+1,Jend1-1
   DO I=1,Mloc
-   IF(H_v(I,J)>MinDepth)THEN
+!   IF(H_v(I,J)>MinDepth)THEN
+   IF(H_v(I,J)>ZERO)THEN
     MASKv(I,J)=1
    ELSE
     MASKv(I,J)=0
@@ -557,7 +563,8 @@ SUBROUTINE UPDATE_MASKS
 
   DO J=1,Jend1-1
   DO I=1,Mloc
-   IF(H_v(I,J)>MinDepth)THEN
+ !  IF(H_v(I,J)>MinDepth)THEN
+   IF(H_v(I,J)>ZERO)THEN
     MASKv(I,J)=1
    ELSE
     MASKv(I,J)=0
@@ -568,7 +575,8 @@ SUBROUTINE UPDATE_MASKS
   else
   DO J=1,Nloc1
   DO I=1,Mloc
-   IF(H_v(I,J)>MinDepth)THEN
+!   IF(H_v(I,J)>MinDepth)THEN
+   IF(H_v(I,J)>ZERO)THEN
     MASKv(I,J)=1
    ELSE
     MASKv(I,J)=0
@@ -616,7 +624,8 @@ SUBROUTINE UPDATE_MASKS
 
   DO J=1,Nloc
   DO I=Ibeg+1,Iend1-1
-   IF(H_u(I,J)>MinDepth)THEN
+!   IF(H_u(I,J)>MinDepth)THEN
+   IF(H_u(I,J)>ZERO)THEN
     MASKu(I,J)=1
    ELSE
     MASKu(I,J)=0
@@ -627,7 +636,8 @@ SUBROUTINE UPDATE_MASKS
 
   DO J=Jbeg+1,Jend1-1
   DO I=1,Mloc
-   IF(H_v(I,J)>MinDepth)THEN
+ !  IF(H_v(I,J)>MinDepth)THEN
+   IF(H_v(I,J)>ZERO)THEN
     MASKv(I,J)=1
    ELSE
     MASKv(I,J)=0
@@ -754,6 +764,7 @@ SUBROUTINE CALCULATE_H_PQ_UV
 # if defined (SUBSURFACE) 
 !$$$
                IF(MASKu(I,J)==0)THEN
+!                IF(MASKu(I,J)==0.AND.MASK(I,J)==0)THEN
                  P(I,J)=P_ground(I,J)
                  U(I,J) =P(I,J)/MAX(MinDepth,Du_ground(I,J))
                ELSE
